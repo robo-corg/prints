@@ -281,20 +281,20 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use crate::{
-        cexpr::{Context, EntityExprBuilder, Expr},
-        ecs::bevy::{add_to_entity, BlueprintEntityCommandExt, PrintsPlugin},
+        bevy_prints::{add_to_entity, BlueprintEntityCommandExt, PrintsPlugin},
+        expr::{Context, EntityExprBuilder, Expr},
         runtime::SimpleRuntime,
         value::Value,
         Blueprint,
     };
-    use bevy_app::App;
-    use bevy_asset::{AssetPlugin, AssetServer, Assets, Handle};
-    use bevy_core::CorePlugin;
-    use bevy_log::LogPlugin;
-    use bevy_reflect::Reflect;
+    use bevy::app::App;
+    use bevy::asset::{AssetPlugin, AssetServer, Assets, Handle};
+    use bevy::core::CorePlugin;
+    use bevy::log::LogPlugin;
+    use bevy::reflect::Reflect;
     use serde::{Deserialize, Serialize};
 
-    use bevy_ecs::{
+    use bevy::ecs::{
         prelude::{Component, Res},
         reflect::ReflectComponent,
         system::{Commands, ResMut},
