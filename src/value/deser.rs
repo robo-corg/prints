@@ -32,10 +32,10 @@ impl<'de> serde::Deserializer<'de> for ValueDeserializer<'de> {
             Value::Vec(values) => visitor.visit_seq(SeqDeserializer::new(
                 values.iter().map(|value| ValueDeserializer { value }),
             )),
-            Value::KeyMap(map) => visitor
-                .visit_map(MapDeserializer::new(map.iter().map(|(key, value)| {
-                    (key.as_str(), ValueDeserializer { value })
-                }))),
+            Value::KeyMap(map) => visitor.visit_map(MapDeserializer::new(
+                map.iter()
+                    .map(|(key, value)| (key.as_str(), ValueDeserializer { value })),
+            )),
             Value::Entity(_comp_map) => {
                 unimplemented!()
             }

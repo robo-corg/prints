@@ -281,8 +281,8 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use crate::{
-        expr::{Context, EntityExprBuilder, Expr},
         bevy_prints::{add_to_entity, BlueprintEntityCommandExt, PrintsPlugin},
+        expr::{Context, EntityExprBuilder, Expr},
         runtime::SimpleRuntime,
         value::Value,
         Blueprint,

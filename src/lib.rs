@@ -123,15 +123,17 @@ mod tests {
     fn test_test_blueprint_parses() {
         Blueprint::load_from_ron_bytes(
             Path::new("../assets/blueprints/test.bp.ron"),
-            include_bytes!("../assets/blueprints/test.bp.ron")
-        ).expect("assets/blueprints/test.bp.ron parses");
+            include_bytes!("../assets/blueprints/test.bp.ron"),
+        )
+        .expect("assets/blueprints/test.bp.ron parses");
     }
 
     #[test]
     fn test_example_blueprint_parses() {
         Blueprint::load_from_ron_bytes(
             Path::new("../assets/blueprints/example.bp.ron"),
-            include_bytes!("../assets/blueprints/example.bp.ron")
-        ).expect("assets/blueprints/example.bp.ron parses");
+            include_bytes!("../assets/blueprints/example.bp.ron"),
+        )
+        .expect("assets/blueprints/example.bp.ron parses");
     }
 }
