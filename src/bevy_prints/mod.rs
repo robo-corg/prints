@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use bevy::app::{App, Plugin};
-use bevy::asset::{AddAsset, AssetLoader, Assets, BoxedFuture, Handle, LoadContext, LoadedAsset};
+use bevy::asset::{AddAsset, AssetLoader, Assets, BoxedFuture, Handle, LoadContext, LoadedAsset, HandleId};
 use bevy::ecs::{
     entity::Entity,
     prelude::{Component, World},
@@ -11,6 +11,7 @@ use bevy::ecs::{
     world::EntityMut,
 };
 
+use bevy::prelude::{Local, EventReader, Commands, AssetEvent};
 use bevy::utils::HashMap;
 use serde::de::DeserializeOwned;
 use tracing::info;
@@ -24,6 +25,11 @@ use crate::{
 };
 
 mod spawn;
+
+#[derive(Component, Default)]
+struct BlueprintSpawn {
+    blueprints: Vec<Handle<Blueprint>>
+}
 
 /// Strategy for how add a [`crate::value::Value`] to an entity
 pub trait ComponentAdder {
@@ -188,18 +194,6 @@ impl AssetLoader for BlueprintAssetLoader {
     }
 }
 
-fn eval_blueprint(
-    world: &mut World,
-    blueprint_handle: Handle<Blueprint>,
-) -> Result<EntityMap<Value>, Error> {
-    let blueprints: &Assets<Blueprint> = world.get_resource().unwrap();
-
-    let blueprint = blueprints.get(&blueprint_handle).unwrap();
-    let runtime = SimpleRuntime::new();
-
-    blueprint.eval_to_entity(&Context::new(&runtime))
-}
-
 pub struct PrintsPlugin;
 
 impl Plugin for PrintsPlugin {
@@ -216,10 +210,23 @@ struct InsertBlueprintCommand {
 
 impl Command for InsertBlueprintCommand {
     fn write(self, world: &mut World) {
-        info!("Blueprint insert");
-        let ent = eval_blueprint(world, self.blueprint).unwrap();
-        info!(data=?&ent, "Blueprint data");
-        add_to_entity(world, self.entity, ent);
+        let blueprints: &Assets<Blueprint> = world.get_resource().unwrap();
+
+        if let Some(blueprint) = blueprints.get(&self.blueprint) {
+            let runtime = SimpleRuntime::new();
+            let ent = blueprint.eval_to_entity(&Context::new(&runtime)).unwrap();
+            add_to_entity(world, self.entity, ent);
+        }
+        else {
+            let mut ent_mut = world.entity_mut(self.entity);
+
+            if !ent_mut.contains::<BlueprintSpawn>() {
+                ent_mut.insert(BlueprintSpawn::default());
+            }
+
+            let mut blueprints_to_spawn = ent_mut.get_mut::<BlueprintSpawn>().unwrap();
+            blueprints_to_spawn.blueprints.push(self.blueprint);
+        }
     }
 }
 
@@ -274,6 +281,50 @@ impl BlueprintAppExt for App {
         registry.register_component_deserializer::<T>(name);
         self
     }
+}
+
+struct LatentBlueprintLoad {
+    entity: Entity,
+    handle: Handle<Blueprint>
+}
+
+struct LoadingBlueprints {
+    blueprint_by_id: HashMap<HandleId, (Handle<Blueprint>, Vec<Entity>)>
+}
+
+fn blueprint_spawn_system(mut commands: Commands,
+    mut lantent_spawn_events: EventReader<LatentBlueprintLoad>,
+    mut blueprint_asset_events: EventReader<AssetEvent<Blueprint>>,
+    mut loading_blueprints: Local<LoadingBlueprints>
+) {
+    for latent_spawn in lantent_spawn_events.iter() {
+        let waiting_blueprints = loading_blueprints.blueprint_by_id.entry(latent_spawn.handle.id)
+            .or_insert_with(|| (latent_spawn.handle.clone(), Vec::new()));
+        waiting_blueprints.1.push(latent_spawn.entity);
+    }
+
+    for asset_event in blueprint_asset_events.iter() {
+        match asset_event {
+            AssetEvent::Created { handle } => {
+                if let Some(waiting_blueprints) = loading_blueprints.blueprint_by_id.remove(&handle.id) {
+                    for entity in waiting_blueprints.1 {
+                        commands.entity(entity).insert_blueprint(handle.clone());
+                    }
+                }
+            },
+            _ => {}
+        }
+    }
+
+    // for (mut blueprints_to_spawn) in &mut query {
+    //     let mut unspawned = Vec::new();
+
+    //     for blueprint_handle in blueprints_to_spawn.blueprints.iter() {
+    //         if let Some(blueprint) = blueprints.get(&self.blueprint_handle) {
+
+    //         }
+    //     }
+    // }
 }
 
 #[cfg(test)]

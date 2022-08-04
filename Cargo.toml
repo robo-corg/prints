@@ -2,7 +2,7 @@
 name = "prints"
 version = "0.1.0"
 authors = ["Andrew McHarg <amcharg@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Template entity blueprints for bevy"
 repository = "https://github.com/robo-corg/prints"
@@ -17,3 +17,6 @@ thiserror = "1"
 anyhow = "1"
 ron = "0.6.4"
 tracing = "0.1.26"
+
+[dev-dependencies]
+bevy = {version = "0.8" }
