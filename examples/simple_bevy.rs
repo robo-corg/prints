@@ -1,6 +1,8 @@
 use bevy::prelude::*;
+use prints::bevy_prints::{
+    serde_component, BlueprintAppExt, BlueprintEntityCommandExt, PrintsPlugin,
+};
 use prints::Blueprint;
-use prints::bevy_prints::{PrintsPlugin, serde_component, BlueprintAppExt, BlueprintEntityCommandExt};
 use serde::Deserialize;
 
 // Prints allows serde as a strategy for creating components.
@@ -28,7 +30,7 @@ struct Attacks(Vec<Attack>);
 enum Attack {
     FireBreath,
     Scratch,
-    Bark
+    Bark,
 }
 
 // See below, this is used to attach Handle<Scene> components to the entity
@@ -50,7 +52,6 @@ fn main() {
         .register_blueprint_component_deserializer::<Name>("Name")
         .register_blueprint_component_deserializer::<Hitpoints>("Hitpoints")
         .register_blueprint_component_deserializer::<Attacks>("Attacks")
-
         // Complex components can be added that have access to &mut World which is useful escape hatch
         // for shoring up missing prints functionality.
         //
@@ -80,7 +81,7 @@ fn main() {
 
 fn setup(
     mut commands: Commands,
-    blueprints: Res<Assets<Blueprint>>,
+    _blueprints: Res<Assets<Blueprint>>,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -92,8 +93,7 @@ fn setup(
         .spawn()
         .insert_bundle(TransformBundle::default())
         // evaluate our blueprint and insert the components to this new entity.
-        .insert_blueprint(corgi_blueprint)
-        ;
+        .insert_blueprint(corgi_blueprint);
 
     // light
     commands.spawn_bundle(PointLightBundle {

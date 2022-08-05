@@ -131,9 +131,9 @@ mod tests {
     #[test]
     fn test_example_blueprint_parses() {
         Blueprint::load_from_ron_bytes(
-            Path::new("../assets/blueprints/example.bp.ron"),
-            include_bytes!("../assets/blueprints/example.bp.ron"),
+            Path::new("../assets/blueprints/corgi.bp.ron"),
+            include_bytes!("../assets/blueprints/corgi.bp.ron"),
         )
-        .expect("assets/blueprints/example.bp.ron parses");
+        .expect("assets/blueprints/corgi.bp.ron parses");
     }
 }

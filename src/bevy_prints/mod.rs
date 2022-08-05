@@ -3,7 +3,9 @@
 use std::marker::PhantomData;
 
 use bevy::app::{App, Plugin};
-use bevy::asset::{AddAsset, AssetLoader, Assets, BoxedFuture, Handle, LoadContext, LoadedAsset, HandleId};
+use bevy::asset::{
+    AddAsset, AssetLoader, Assets, BoxedFuture, Handle, HandleId, LoadContext, LoadedAsset,
+};
 use bevy::ecs::{
     entity::Entity,
     prelude::{Component, World},
@@ -11,7 +13,7 @@ use bevy::ecs::{
     world::EntityMut,
 };
 
-use bevy::prelude::{Local, EventReader, Commands, AssetEvent};
+use bevy::prelude::{AssetEvent, Commands, EventReader, Local};
 use bevy::utils::HashMap;
 use serde::de::DeserializeOwned;
 use tracing::info;
@@ -20,8 +22,8 @@ use crate::{
     bevy_prints::spawn::add_to_entity,
     expr::{Context, Evaluatable},
     runtime::SimpleRuntime,
-    value::{EntityMap, Value},
-    Blueprint, Error,
+    value::Value,
+    Blueprint,
 };
 
 mod spawn;
@@ -213,8 +215,7 @@ impl Command for InsertBlueprintCommand {
             let runtime = SimpleRuntime::new();
             let ent = blueprint.eval_to_entity(&Context::new(&runtime)).unwrap();
             add_to_entity(world, self.entity, ent);
-        }
-        else {
+        } else {
             world.send_event(LatentBlueprintLoad {
                 entity: self.entity,
                 handle: self.blueprint,
@@ -279,22 +280,25 @@ impl BlueprintAppExt for App {
 #[derive(Debug, Clone)]
 struct LatentBlueprintLoad {
     entity: Entity,
-    handle: Handle<Blueprint>
+    handle: Handle<Blueprint>,
 }
 
 #[derive(Debug, Default)]
 struct LoadingBlueprints {
-    blueprint_by_id: HashMap<HandleId, (Handle<Blueprint>, Vec<Entity>)>
+    blueprint_by_id: HashMap<HandleId, (Handle<Blueprint>, Vec<Entity>)>,
 }
 
 /// Attempt to spawn blueprints that were not loaded yet at the time of their spawning
-fn blueprint_spawn_system(mut commands: Commands,
+fn blueprint_spawn_system(
+    mut commands: Commands,
     mut lantent_spawn_events: EventReader<LatentBlueprintLoad>,
     mut blueprint_asset_events: EventReader<AssetEvent<Blueprint>>,
-    mut loading_blueprints: Local<LoadingBlueprints>
+    mut loading_blueprints: Local<LoadingBlueprints>,
 ) {
     for latent_spawn in lantent_spawn_events.iter() {
-        let waiting_blueprints = loading_blueprints.blueprint_by_id.entry(latent_spawn.handle.id)
+        let waiting_blueprints = loading_blueprints
+            .blueprint_by_id
+            .entry(latent_spawn.handle.id)
             .or_insert_with(|| (latent_spawn.handle.clone(), Vec::new()));
         waiting_blueprints.1.push(latent_spawn.entity);
     }
@@ -302,12 +306,14 @@ fn blueprint_spawn_system(mut commands: Commands,
     for asset_event in blueprint_asset_events.iter() {
         match asset_event {
             AssetEvent::Created { handle } => {
-                if let Some(waiting_blueprints) = loading_blueprints.blueprint_by_id.remove(&handle.id) {
+                if let Some(waiting_blueprints) =
+                    loading_blueprints.blueprint_by_id.remove(&handle.id)
+                {
                     for entity in waiting_blueprints.1 {
                         commands.entity(entity).insert_blueprint(handle.clone());
                     }
                 }
-            },
+            }
             _ => {}
         }
     }
@@ -335,7 +341,6 @@ mod tests {
         prelude::{Component, Res},
         reflect::ReflectComponent,
         system::{Commands, ResMut},
-        world::World,
     };
 
     #[derive(Component, Reflect, Default, Debug, Deserialize, Serialize, PartialEq)]
@@ -446,14 +451,14 @@ mod tests {
             .add_plugin(PrintsPlugin)
             .register_type::<TestComp>();
 
-        let mut handle = Arc::new(Mutex::new(None));
+        let handle = Arc::new(Mutex::new(None));
 
         let handle_startup = handle.clone();
 
         app.add_startup_system(
-            move |mut bps: ResMut<Assets<Blueprint>>,
+            move |_bps: ResMut<Assets<Blueprint>>,
                   asset_server: Res<AssetServer>,
-                  mut commands: Commands| {
+                  _commands: Commands| {
                 let bp_handle: Handle<Blueprint> = asset_server.load("blueprints/test.bp.ron");
 
                 {
@@ -465,7 +470,7 @@ mod tests {
 
         let mut ticks = 0;
 
-        let loaded_blueprint = loop {
+        let _loaded_blueprint = loop {
             app.update();
 
             let handle_lock = handle.lock().unwrap();
