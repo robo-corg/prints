@@ -26,11 +26,6 @@ use crate::{
 
 mod spawn;
 
-#[derive(Component, Default)]
-struct BlueprintSpawn {
-    blueprints: Vec<Handle<Blueprint>>
-}
-
 /// Strategy for how add a [`crate::value::Value`] to an entity
 pub trait ComponentAdder {
     fn add_to_entity(
@@ -199,6 +194,8 @@ pub struct PrintsPlugin;
 impl Plugin for PrintsPlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.add_asset::<Blueprint>()
+            .add_event::<LatentBlueprintLoad>()
+            .add_system(blueprint_spawn_system)
             .init_asset_loader::<BlueprintAssetLoader>();
     }
 }
@@ -218,14 +215,10 @@ impl Command for InsertBlueprintCommand {
             add_to_entity(world, self.entity, ent);
         }
         else {
-            let mut ent_mut = world.entity_mut(self.entity);
-
-            if !ent_mut.contains::<BlueprintSpawn>() {
-                ent_mut.insert(BlueprintSpawn::default());
-            }
-
-            let mut blueprints_to_spawn = ent_mut.get_mut::<BlueprintSpawn>().unwrap();
-            blueprints_to_spawn.blueprints.push(self.blueprint);
+            world.send_event(LatentBlueprintLoad {
+                entity: self.entity,
+                handle: self.blueprint,
+            });
         }
     }
 }
@@ -283,15 +276,18 @@ impl BlueprintAppExt for App {
     }
 }
 
+#[derive(Debug, Clone)]
 struct LatentBlueprintLoad {
     entity: Entity,
     handle: Handle<Blueprint>
 }
 
+#[derive(Debug, Default)]
 struct LoadingBlueprints {
     blueprint_by_id: HashMap<HandleId, (Handle<Blueprint>, Vec<Entity>)>
 }
 
+/// Attempt to spawn blueprints that were not loaded yet at the time of their spawning
 fn blueprint_spawn_system(mut commands: Commands,
     mut lantent_spawn_events: EventReader<LatentBlueprintLoad>,
     mut blueprint_asset_events: EventReader<AssetEvent<Blueprint>>,
@@ -315,16 +311,6 @@ fn blueprint_spawn_system(mut commands: Commands,
             _ => {}
         }
     }
-
-    // for (mut blueprints_to_spawn) in &mut query {
-    //     let mut unspawned = Vec::new();
-
-    //     for blueprint_handle in blueprints_to_spawn.blueprints.iter() {
-    //         if let Some(blueprint) = blueprints.get(&self.blueprint_handle) {
-
-    //         }
-    //     }
-    // }
 }
 
 #[cfg(test)]
