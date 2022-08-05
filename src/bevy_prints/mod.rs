@@ -291,11 +291,11 @@ struct LoadingBlueprints {
 /// Attempt to spawn blueprints that were not loaded yet at the time of their spawning
 fn blueprint_spawn_system(
     mut commands: Commands,
-    mut lantent_spawn_events: EventReader<LatentBlueprintLoad>,
+    mut latent_spawn_events: EventReader<LatentBlueprintLoad>,
     mut blueprint_asset_events: EventReader<AssetEvent<Blueprint>>,
     mut loading_blueprints: Local<LoadingBlueprints>,
 ) {
-    for latent_spawn in lantent_spawn_events.iter() {
+    for latent_spawn in latent_spawn_events.iter() {
         let waiting_blueprints = loading_blueprints
             .blueprint_by_id
             .entry(latent_spawn.handle.id)
